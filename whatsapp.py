@@ -12,27 +12,23 @@ BOT_NUMBER = "584168808041"
 
 client = NewClient("whatsapp.db")
 
-
 loop = asyncio.new_event_loop()
-
 
 def start_loop():
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
-
 threading.Thread(target=start_loop, daemon=True).start()
-
 
 asyncio.run_coroutine_threadsafe(worker(), loop)
 
+def start_bot():
+    print("🚀 Starting WhatsApp Bot")
+    client.connect()
 
 @client.event(ConnectedEv)
 def on_connected(client: NewClient, event: ConnectedEv):
-
-    print("\n✅ BOT ACTIVE")
-    print("--- Waiting for messages ---\n")
-
+    print("✅ BOT ACTIVE")
 
 @client.event(MessageEv)
 def on_message(client: NewClient, message: MessageEv):
@@ -76,11 +72,6 @@ def on_message(client: NewClient, message: MessageEv):
 
             country = range_part.split()[0]
 
-            print("ADD COMMAND DETECTED")
-            print("name:", name)
-            print("country:", country)
-            print("range:", range_part)
-
             accounts.append({
                 "name": name,
                 "country": country,
@@ -93,7 +84,3 @@ def on_message(client: NewClient, message: MessageEv):
 
         except:
             client.send_message(chat, "⚠ Invalid command format")
-
-
-print("🚀 Starting Bot")
-client.connect()
