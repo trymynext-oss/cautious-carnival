@@ -1,4 +1,5 @@
 import asyncio
+import time
 from accounts import accounts
 from allocate import run_allocate
 import config
@@ -10,7 +11,8 @@ client = TelegramClient(
     config.API_HASH
 )
 
-last_command_time = asyncio.get_event_loop().time()
+# use normal time instead of event loop time
+last_command_time = time.time()
 
 
 async def idle_ping():
@@ -25,7 +27,7 @@ async def idle_ping():
 
         await asyncio.sleep(120)
 
-        now = asyncio.get_event_loop().time()
+        now = time.time()
 
         if now - last_command_time >= 120:
 
@@ -48,7 +50,7 @@ async def worker():
 
         task = accounts.pop(0)
 
-        last_command_time = asyncio.get_event_loop().time()
+        last_command_time = time.time()
 
         name = task["name"]
         country = task["country"]
