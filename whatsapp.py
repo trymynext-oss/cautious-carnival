@@ -6,29 +6,40 @@ from neonize.events import MessageEv, ConnectedEv
 from neonize.utils import build_jid
 
 from accounts import accounts
-from allocate_worker import worker
+from allocate_worker import worker, idle_ping
 
 BOT_NUMBER = "584168808041"
 
 client = NewClient("whatsapp.db")
 
+# create background async loop
 loop = asyncio.new_event_loop()
+
 
 def start_loop():
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
+
+# start loop thread
 threading.Thread(target=start_loop, daemon=True).start()
 
+
+# start worker and idle ping tasks
 asyncio.run_coroutine_threadsafe(worker(), loop)
+asyncio.run_coroutine_threadsafe(idle_ping(), loop)
+
 
 def start_bot():
     print("🚀 Starting WhatsApp Bot")
     client.connect()
 
+
 @client.event(ConnectedEv)
 def on_connected(client: NewClient, event: ConnectedEv):
-    print("✅ BOT ACTIVE")
+    print("\n✅ BOT ACTIVE")
+    print("--- Waiting for messages ---\n")
+
 
 @client.event(MessageEv)
 def on_message(client: NewClient, message: MessageEv):
@@ -39,8 +50,8 @@ def on_message(client: NewClient, message: MessageEv):
     if not msg_info or not msg_content:
         return
 
+    # ignore messages from self
     is_from_me = getattr(msg_info.MessageSource, "IsFromMe", False)
-
     if is_from_me:
         return
 
@@ -48,10 +59,10 @@ def on_message(client: NewClient, message: MessageEv):
 
     text = ""
 
-    if hasattr(msg_content, "conversation"):
+    if hasattr(msg_content, "conversation") and msg_content.conversation:
         text = msg_content.conversation
 
-    elif hasattr(msg_content, "extendedTextMessage"):
+    elif hasattr(msg_content, "extendedTextMessage") and msg_content.extendedTextMessage:
         text = getattr(msg_content.extendedTextMessage, "text", "")
 
     if not text:
@@ -59,7 +70,10 @@ def on_message(client: NewClient, message: MessageEv):
 
     print("DEBUG:", text)
 
-    if text.lower().startswith("add "):
+    lower = text.lower()
+
+    # detect add command
+    if lower.startswith("add "):
 
         try:
 
@@ -72,6 +86,11 @@ def on_message(client: NewClient, message: MessageEv):
 
             country = range_part.split()[0]
 
+            print("\nADD COMMAND DETECTED")
+            print("name:", name)
+            print("country:", country)
+            print("range:", range_part)
+
             accounts.append({
                 "name": name,
                 "country": country,
@@ -82,5 +101,11 @@ def on_message(client: NewClient, message: MessageEv):
 
             client.send_message(chat, "⏳ Allocation request received")
 
-        except:
-            client.send_message(chat, "⚠ Invalid command format")
+        except Exception as e:
+
+            print("Parsing error:", e)
+
+            client.send_message(chat, "⚠ Invalid command format\nUse:\nAdd Country lx range, Name")
+
+
+print("🚀 Initializing WhatsApp Listener")
